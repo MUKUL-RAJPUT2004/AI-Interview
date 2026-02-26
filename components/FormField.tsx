@@ -1,22 +1,6 @@
-import React from 'react'
 import { Controller, FieldValues , Path, Control} from 'react-hook-form'
 import { Input } from "@/components/ui/input"
-
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
-
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupText,
-  InputGroupTextarea,
-} from "@/components/ui/input-group"
-import { FormControl, FormDescription, FormItem, FormLabel, FormMessage } from './ui/form'
+import { FormControl, FormItem, FormLabel, FormMessage } from './ui/form'
 
 interface FormFieldProps<T extends FieldValues> {
     control: Control<T>;
