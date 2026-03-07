@@ -11,6 +11,7 @@
   "dependencies": {
     "@ai-sdk/google": "^3.0.36",
     "@hookform/resolvers": "^5.2.2",
+    "@vapi-ai/server-sdk": "^0.11.0",
     "@vapi-ai/web": "^2.5.2",
     "ai": "^6.0.108",
     "class-variance-authority": "^0.7.1",
