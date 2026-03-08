@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { vapi } from '@/lib/vapi.sdk';
+import { interviewer } from '@/constants';
 
 enum CallStatus {
     INACTIVE = 'INACTIVE',
@@ -117,37 +118,15 @@ const Agent = ({ userName, userId, type }: AgentProps) => {
     }, [callStatus, router, interviewGenerated]);
 
     const handleCall = async () => {
-        setCallStatus(CallStatus.CONNECTING);
+    setCallStatus(CallStatus.CONNECTING);
 
-        try {
-            // Stop any existing call
-            await vapi.stop();
-
-            const assistantId = process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID;
-            
-            if (!assistantId) {
-                throw new Error("Assistant ID not found in environment variables");
-            }
-
-            console.log("Starting call with assistantId:", assistantId);
-            console.log("Variables:", { userName, userId, type });
-
-            // Start the call with Assistant
-            await vapi.start({
-                assistantId: assistantId,
-                assistantOverrides: {
-                    variableValues: {
-                        username: userName,  // This replaces {{username}} in the prompt
-                        userid: userId       // This will be passed to your API
-                    }
-                }
-            });
-
-        } catch (error) {
-            console.error("Failed to start call:", error);
-            setCallStatus(CallStatus.INACTIVE);
-        }
-    };
+      await vapi.start(process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID!, {
+        variableValues: {
+          username: userName,
+          userid: userId,
+        },
+      });
+  };
 
     const handleDisconnect = async () => {
         try {
