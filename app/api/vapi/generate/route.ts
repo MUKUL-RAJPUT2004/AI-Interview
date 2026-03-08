@@ -1,131 +1,50 @@
-// import {generateText} from "ai";
-// import {google} from "@ai-sdk/google"
-// import { getRandomInterviewCover } from "@/lib/utils";
-// import { db } from "@/firebase/admin";
-
-// export async function GET(){
-//     return Response.json({success: true, data: 'THANK YOU!'}, {status: 200});
-// }
-
-// export async function POST(request:Request) {
-//     const { type, role, level, techstack, amount, userid } = await request.json();
-
-//     try {
-//         const { text: questions } = await generateText({  //using the ai sdkof vercel its simple
-//             model: google('gemini-3-flash-preview'),
-//             prompt: `Prepare questoins for a job interview.
-//                     The job role is ${role}.
-//                     The job experience level is ${level}.
-//                     The tech stack used in the job is: ${techstack}.
-//                     The focus between behavioural and technical questions should lean towards: ${type}.
-//                     The amount of questions required is: ${amount}.
-//                     Please return only the questions, without any additonal text.
-//                     The questions are going to be read by a voice assistant so do not use "/" or "*" or any other characters which might break the voice assistant.
-//                     Return the questions formatted like this:
-//                     ["Question 1", "Question 2", "Question 3"]
-                    
-//                     Thank you! <3
-//                     `,
-//         })
-
-//         const interview = {
-//             role, type, level, 
-//             techstack: techstack.split(','),
-//             questions: JSON.parse(questions),
-//             userId: userid,
-//             finalized: true,
-//             coverImage: getRandomInterviewCover(),
-//             createdAt: new Date().toISOString()
-//         }
-
-//         await db.collection("interviews").add(interview);
-//         return Response.json({success: true}, {status: 200})
-        
-//     } catch (error) {
-//         console.log(error);
-//         return Response.json({success: false, error}, {status: 500})
-        
-//     }
-// }
-
-// pages/api/generate-interview.ts or app/api/generate-interview/route.ts
-import { generateText } from "ai";
-import { google } from "@ai-sdk/google";
+import {generateText} from "ai";
+import {google} from "@ai-sdk/google"
 import { getRandomInterviewCover } from "@/lib/utils";
 import { db } from "@/firebase/admin";
 
-export async function POST(request: Request) {
+export async function GET(){
+    return Response.json({success: true, data: 'THANK YOU!'}, {status: 200});
+}
+
+export async function POST(request:Request) {
+    const { type, role, level, techstack, amount, userid } = await request.json();
+
     try {
-        // Handle Vapi tool call format
-        const body = await request.json();
-        
-        // Extract data from Vapi's tool call structure
-        const { message } = body;
-        const toolCall = message.toolCallList[0];
-        const { type, role, level, techstack, amount, userid } = toolCall.arguments;
-
-        console.log('Received interview request:', {
-            type, role, level, techstack, amount, userid
-        });
-
-        // Your existing logic
-        const { text: questions } = await generateText({
+        const { text: questions } = await generateText({  //using the ai sdkof vercel its simple
             model: google('gemini-3-flash-preview'),
-            prompt: `Prepare questions for a job interview.
+            prompt: `Prepare questoins for a job interview.
                     The job role is ${role}.
                     The job experience level is ${level}.
                     The tech stack used in the job is: ${techstack}.
                     The focus between behavioural and technical questions should lean towards: ${type}.
                     The amount of questions required is: ${amount}.
-                    Please return only the questions, without any additional text.
+                    Please return only the questions, without any additonal text.
                     The questions are going to be read by a voice assistant so do not use "/" or "*" or any other characters which might break the voice assistant.
                     Return the questions formatted like this:
                     ["Question 1", "Question 2", "Question 3"]
                     
                     Thank you! <3
                     `,
-        });
+        })
 
         const interview = {
-            role, 
-            type, 
-            level, 
-            techstack,
-            amount,
-            userid,
+            role, type, level, 
+            techstack: techstack.split(','),
             questions: JSON.parse(questions),
-            createdAt: new Date().toISOString(),
-            cover: getRandomInterviewCover()
-        };
+            userId: userid,
+            finalized: true,
+            coverImage: getRandomInterviewCover(),
+            createdAt: new Date().toISOString()
+        }
 
-        // Save to database
-        const docRef = await db.collection('interviews').add(interview);
+        await db.collection("interviews").add(interview);
+        return Response.json({success: true}, {status: 200})
         
-        // Return response in Vapi's expected format
-        return Response.json({
-            results: [
-                {
-                    toolCallId: toolCall.id,
-                    result: `Perfect! I've generated ${amount} ${type} interview questions for the ${role} position at ${level} level. Your interview is ready and saved with ID: ${docRef.id}. You can start practicing now!`
-                }
-            ]
-        }, { status: 200 });
-
     } catch (error) {
-        console.error('Error generating interview:', error);
+        console.log(error);
+        return Response.json({success: false, error}, {status: 500})
         
-        return Response.json({
-            results: [
-                {
-                    toolCallId: request.body?.message?.toolCallList[0]?.id,
-                    result: "I'm sorry, there was an error generating your interview questions. Please try again."
-                }
-            ]
-        }, { status: 500 });
     }
 }
 
-// Keep your existing GET method
-export async function GET() {
-    return Response.json({ success: true, data: 'THANK YOU!' }, { status: 200 });
-}
