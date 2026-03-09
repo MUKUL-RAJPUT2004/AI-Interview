@@ -4,49 +4,55 @@ import { getRandomInterviewCover } from "@/lib/utils";
 import { db } from "@/firebase/admin";
 
 export async function GET() {
-  return Response.json({ success: true, data: "THANK YOU!" }, { status: 200 });
+  return Response.json({ success: true, message: "API working" });
 }
 
 export async function POST(request: Request) {
-  const { type, role, level, techstack, amount, userid } = await request.json();
-
-  if (!role || !type || !level || !techstack || !amount || !userid) {
-    return Response.json(
-      { success: false, message: "Missing parameters" },
-      { status: 400 }
-    );
-  }
-
   try {
-    const questionAmount = Number(amount);
+    const body = await request.json();
+    console.log("VAPI TOOL PAYLOAD:", body);
 
-    const { text } = await generateText({
-      model: google("gemini-3-flash-preview"),
-      maxOutputTokens: 200,
-      prompt: `
-            Prepare questions for a job interview.
+    const { type, role, level, techstack, amount, userid } = body;
 
-            Role: ${role}
-            Experience Level: ${level}
-            Tech Stack: ${techstack}
-            Interview Type: ${type}
-            Number of Questions: ${questionAmount}
+    if (!role || !type || !level || !techstack || !amount || !userid) {
+      return Response.json({ success: false, message: "Missing parameters" });
+    }
 
-            Return ONLY valid JSON.
-            Do not include explanations.
-            The questions are going to be read by a voice assistant so do not use "/" or "*" or any other characters which might break the voice assistant.
-            
-            Example format:
-            ["Question 1","Question 2","Question 3"]`
-    });
-
-    let parsedQuestions;
+    let questions;
 
     try {
-      parsedQuestions = JSON.parse(text);
-    } catch {
-      parsedQuestions = text.replace(/```json|```/g, "").trim();
-      parsedQuestions = JSON.parse(parsedQuestions);
+      const { text } = await generateText({
+        model: google("gemini-3.1-flash-lite-preview"),
+        prompt: `
+Generate ${amount} interview questions.
+
+Role: ${role}
+Experience Level: ${level}
+Tech Stack: ${techstack}
+Interview Type: ${type}
+
+Return ONLY a JSON array.
+
+Example:
+["Question 1","Question 2","Question 3"]
+`
+      });
+
+      questions = JSON.parse(text);
+
+    } catch (err) {
+      console.log("Gemini error (quota or parsing):", err);
+
+      // fallback questions (MVP safety)
+      questions = [
+        "Tell me about yourself.",
+        "What experience do you have with this tech stack?",
+        "Describe a challenging project you worked on.",
+        "How do you debug complex issues?",
+        "Explain a concept related to this role.",
+        "How do you handle tight deadlines?",
+        "Where do you see your career in five years?"
+      ];
     }
 
     const interview = {
@@ -54,7 +60,7 @@ export async function POST(request: Request) {
       type,
       level,
       techstack: techstack.split(","),
-      questions: parsedQuestions,
+      questions,
       userId: userid,
       finalized: true,
       coverImage: getRandomInterviewCover(),
@@ -63,14 +69,16 @@ export async function POST(request: Request) {
 
     await db.collection("interviews").add(interview);
 
-    return Response.json({ success: true }, { status: 200 });
+    console.log("Interview saved");
+
+    return Response.json({ success: true });
 
   } catch (error) {
-    console.log("AI generation error:", error);
+    console.log("Server error:", error);
 
-    return Response.json(
-      { success: false, message: "Failed to generate interview" },
-      { status: 500 }
-    );
+    return Response.json({
+      success: false,
+      message: "Server error"
+    });
   }
 }
