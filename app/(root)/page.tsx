@@ -4,8 +4,19 @@ import Link from 'next/link'
 import React from 'react'
 import { dummyInterviews } from '@/constants'
 import InterviewCard from '@/components/InterviewCard'
+import { getCurrentUser, getInterviewByUserId, getLatestInterviews } from '@/lib/actions/auth.action'
 
-function page() {
+async function page() {
+  const user = await getCurrentUser();
+  const [userInterviews, latestInterviews] = await Promise.all([
+    await getInterviewByUserId(user?.id!),
+    await getLatestInterviews({ userId: user?.id!, limit: 20 })
+  ])
+  
+
+  const hasPastInterviews = (userInterviews?.length ?? 0) > 0
+  const hasUpcomingInterviews = (latestInterviews?.length ?? 0) > 0
+
   return (
     <>
       <section className='card-cta'>
@@ -28,9 +39,15 @@ function page() {
       <section className='flex flex-col gap-6 mt-8'>
         <h2>Your Interview</h2>
         <div className='interviews-section'>
-          {dummyInterviews.map((interview)=>(
+          {hasPastInterviews ? (
+            userInterviews?.map((interview)=>(
             <InterviewCard {...interview} key={interview.id} />
-          ))}
+            ))
+          ): (
+            <p>
+            You haven't taken any interview.
+          </p> 
+          )}
         </div>
 
       </section>
@@ -41,9 +58,15 @@ function page() {
         </h2>
         <div className='interview-section'>
           <div className='interviews-section'>
-          {dummyInterviews.map((interview)=>(
+          {hasUpcomingInterviews ? (
+            latestInterviews?.map((interview)=>(
             <InterviewCard {...interview} key={interview.id} />
-          ))}
+            ))
+          ): (
+            <p>
+            There are no new interview available.
+          </p> 
+          )}
         </div>
           
           {/* <p>
