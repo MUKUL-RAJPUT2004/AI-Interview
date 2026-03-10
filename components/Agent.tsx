@@ -1,9 +1,10 @@
 'use client'
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { vapi } from '@/lib/vapi.sdk';
+import { interviewer } from '@/constants';
 
 enum CallStatus {
     INACTIVE = 'INACTIVE',
@@ -17,13 +18,9 @@ interface SavedMessage {
     content: string;
 }
 
-interface AgentProps {
-    userName: string;
-    userId: string;
-    type: string;
-}
 
-const Agent = ({ userName, userId, type }: AgentProps) => {
+
+const Agent = ({ userName, userId, type, interviewId, questions }: AgentProps) => {
     const router = useRouter();
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [callStatus, setCallStatus] = useState<CallStatus>(CallStatus.INACTIVE);
@@ -104,27 +101,69 @@ const Agent = ({ userName, userId, type }: AgentProps) => {
         }
     }, [router]);
 
+    const hanleGenerateFeedback = async (messages: SavedMessage[]) =>{
+        console.log('Generate feedback here');
+
+        //todo: create a server action that generates feedback
+        const { success, id } = {
+            success: true,
+            id: 'feedback-id'
+        }
+
+        if(success && id){
+            router.push(`/interview/${interviewId}/feedback`)
+        } else {
+            console.log('Error saving feedback');
+            router.push('/');
+            
+        }
+        
+    }
+
     useEffect(() => {
-        if(callStatus === CallStatus.FINISHED) {
-            // Add a small delay before redirecting
+
+    if(callStatus === CallStatus.FINISHED){
+
+        if(type === 'generate'){
             setTimeout(() => {
                 if (!interviewGenerated) {
-                    router.push('/'); // Go to home if interview wasn't generated
+                    router.push('/');
                 }
-                // If interview was generated, the redirect is handled in onMessage
             }, 2000);
         }
-    }, [callStatus, router, interviewGenerated]);
+
+        if(type !== 'interview'){
+            hanleGenerateFeedback(messages);
+        }
+
+    }
+
+}, [callStatus]);
 
     const handleCall = async () => {
     setCallStatus(CallStatus.CONNECTING);
 
-      await vapi.start(process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID!, {
+    if(type === 'generate'){
+    await vapi.start(process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID!, {
         variableValues: {
           username: userName,
           userid: userId,
         },
       });
+    } else{
+        let formattedQuestions = "";
+
+        if(questions){
+            formattedQuestions = questions
+                                        .map((question)=> `- ${question}`)
+                                        .join('\n');
+        }
+        await vapi.start(interviewer, {
+            variableValues:{
+                questions: formattedQuestions,
+            }
+        })
+    }
   };
 
     const handleDisconnect = async () => {
@@ -178,7 +217,7 @@ const Agent = ({ userName, userId, type }: AgentProps) => {
                         onClick={handleCall}
                         disabled={callStatus === CallStatus.CONNECTING}
                     >
-                        {callStatus === CallStatus.CONNECTING ? 'Connecting...' : 'Start Interview Setup'}
+                        {callStatus === CallStatus.CONNECTING ? 'Connecting...' : 'Start Call'}
                     </button>
                 ) : (
                     <button 
@@ -199,7 +238,7 @@ const Agent = ({ userName, userId, type }: AgentProps) => {
             
             {callStatus === CallStatus.ACTIVE && (
                 <div className="text-center mt-4">
-                    <p className="text-green-600">🎤 Interview setup in progress...</p>
+                    <p className="text-green-600">🎤 Interview progressing...</p>
                 </div>
             )}
         </>
