@@ -5,7 +5,8 @@ import React from 'react'
 import { dummyInterviews } from '@/constants'
 import InterviewCard from '@/components/InterviewCard'
 import { getCurrentUser,  } from '@/lib/actions/auth.action'
-import { getInterviewByUserId, getLatestInterviews } from '@/lib/general.actions'
+import { getInterviewByUserId, getLatestInterviews } from '@/lib/actions/general.actions'
+
 
 async function page() {
   const user = await getCurrentUser();

@@ -61,25 +61,38 @@ const AuthForm = ({ type }: { type: FormType }) => {
 
         if(!result?.success){
           toast.error(result?.message);
-          result;
+          return
         }
         
-
-        await signIn({
+        const signInResult = await signIn({
           email, idToken
         })
 
-        toast.success('Sign in successfully.')
+        if(!signInResult?.success){
+          toast.error(signInResult?.message);
+          return
+        }
+
+        toast.success('Account created and signed in successfully!')
         router.push('/')
-        console.log('SIGN-UP', values);
-        toast.success('Account created successfully!')  
-        router.push('/sign-in')
       }
       else{
         const { email, password }  = values
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
 
-        console.log('SIGN-IN', values);
+        const idToken = await userCredential.user.getIdToken();
+        if(!idToken){
+          toast.error('Failed to get authentication token')
+          return
+        }
+
+        const result = await signIn({ email, idToken });
+        
+        if(!result?.success){
+          toast.error(result?.message || 'Sign in failed');
+          return
+        }
+
         toast.success('Signed in successfully!')
         router.push('/')        
       }
