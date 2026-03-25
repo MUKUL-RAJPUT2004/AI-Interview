@@ -12,7 +12,7 @@ const monaSans = Mona_Sans({
 
 
 export const metadata: Metadata = {
-  title: "Prepwise",
+  title: "MernHUB AI Interview",
   description: "An AI powered for preparing for Mock Interviews.",
 };
 
